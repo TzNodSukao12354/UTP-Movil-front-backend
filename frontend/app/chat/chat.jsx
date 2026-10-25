@@ -39,6 +39,8 @@ export default function Chat({ isTab = false, onGoToTab }) {
     enviarMensaje,
     emitirEscribiendo,
     conectado,
+    necesitaSesion,
+    errorConexion,
     quienEscribe,
     reportarMensaje,
     eliminarMensaje,
@@ -47,6 +49,7 @@ export default function Chat({ isTab = false, onGoToTab }) {
   } = useChat();
 
   const [textoInput, setTextoInput] = useState("");
+  const [stickersVisible, setStickersVisible] = useState(false);
   const [mostrarChat, setMostrarChat] = useState(false);
   const [msgMenuAbierto, setMsgMenuAbierto] = useState(null);
   const [infoGrupoVisible, setInfoGrupoVisible] = useState(false);
@@ -107,6 +110,11 @@ export default function Chat({ isTab = false, onGoToTab }) {
     enviarMensaje(textoInput.trim());
     setTextoInput("");
     emitirEscribiendo(false);
+  };
+
+  const handleAgregarSticker = (sticker) => {
+    setTextoInput((textoActual) => `${textoActual}${sticker}`);
+    emitirEscribiendo(true);
   };
 
   const handleReportar = (msg) => {
@@ -184,6 +192,31 @@ export default function Chat({ isTab = false, onGoToTab }) {
           </TouchableOpacity>
         </View>
       </View>
+
+      {!conectado && !mostrarChat && (
+        <TouchableOpacity
+          accessibilityRole="button"
+          onPress={() => router.push("/ingresar")}
+          style={{
+            marginHorizontal: 12,
+            marginTop: 8,
+            padding: 12,
+            borderRadius: 10,
+            backgroundColor: "#241317",
+          }}
+        >
+          <Text style={{ color: "white", fontSize: 13 }}>
+            {necesitaSesion
+              ? "Inicia sesión para conectar el chat en tiempo real."
+              : errorConexion || "Conectando con el servidor de chat..."}
+          </Text>
+          {necesitaSesion && (
+            <Text style={{ color: "#ff6678", fontSize: 13, fontWeight: "700", marginTop: 5 }}>
+              Iniciar sesión
+            </Text>
+          )}
+        </TouchableOpacity>
+      )}
 
       {/* VISTA: Lista de contactos */}
       {!mostrarChat && (
@@ -488,6 +521,36 @@ export default function Chat({ isTab = false, onGoToTab }) {
             )}
           </ScrollView>
 
+          {stickersVisible && (
+            <View
+              accessibilityLabel="Stickers de prueba"
+              style={{
+                paddingVertical: 8,
+                paddingHorizontal: 8,
+                borderTopWidth: 1,
+                borderTopColor: "#1F1F1F",
+                backgroundColor: "#111",
+              }}
+            >
+              <Text accessibilityRole="text" style={{ color: "#8A8A8A", fontSize: 11, marginBottom: 4 }}>
+                Toca para agregar al mensaje
+              </Text>
+              <View style={{ flexDirection: "row", justifyContent: "space-around" }}>
+                {["😂", "❤️", "🔥", "🥹", "👍", "🎉", "🦋", "✨"].map((sticker) => (
+                  <TouchableOpacity
+                    key={sticker}
+                    accessibilityRole="button"
+                    accessibilityLabel={`Agregar sticker ${sticker} al mensaje`}
+                    onPress={() => handleAgregarSticker(sticker)}
+                    style={{ padding: 4 }}
+                  >
+                    <Text style={{ fontSize: 28 }}>{sticker}</Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            </View>
+          )}
+
           {/* Input */}
           <View style={styles.inputArea}>
             <TouchableOpacity style={styles.circleButton}>
@@ -505,7 +568,17 @@ export default function Chat({ isTab = false, onGoToTab }) {
               onSubmitEditing={handleEnviar}
               blurOnSubmit={false}
             />
-            <Ionicons name="happy-outline" size={26} color="#B8B8B8" />
+            <TouchableOpacity
+              accessibilityRole="button"
+              accessibilityLabel={stickersVisible ? "Cerrar stickers" : "Abrir stickers"}
+              onPress={() => setStickersVisible((visible) => !visible)}
+            >
+              <Ionicons
+                name={stickersVisible ? "close-outline" : "happy-outline"}
+                size={26}
+                color="#B8B8B8"
+              />
+            </TouchableOpacity>
             <TouchableOpacity style={{ marginLeft: 10 }} onPress={handleEnviar}>
               <Ionicons name="send" size={24} color="#E60023" />
             </TouchableOpacity>
@@ -524,7 +597,7 @@ export default function Chat({ isTab = false, onGoToTab }) {
             <Ionicons name="chatbubble" size={26} color="#E60023" />
             <Text style={[styles.navText, styles.navTextActive]}>Chat</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.navItem} onPress={() => router.push("/notificacion/notificaciones")}>
+          <TouchableOpacity style={styles.navItem} onPress={() => router.push("/funciones/notificaciones")}>
             <View style={{ position: "relative" }}>
               <Ionicons name="notifications-outline" size={26} color="#888" />
               <View style={styles.smallBadge}>

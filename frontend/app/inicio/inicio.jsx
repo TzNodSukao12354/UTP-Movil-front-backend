@@ -1,33 +1,45 @@
 import { Ionicons } from "@expo/vector-icons";
-import { useRouter } from "expo-router";
+import { useLocalSearchParams } from "expo-router";
 import { useEffect, useRef, useState } from "react";
 import {
   Animated,
-  Dimensions,
   ScrollView,
   Text,
   TouchableOpacity,
   View,
+  useWindowDimensions,
 } from "react-native";
 import { useBottomNav } from "../../hooks/useBottomNav";
-import Chat from "../chat/chat";
 import Perfil from "../perfil/perfil";
 import styles from "./cssinicio";
 import InicioFeed from "./InicioFeed";
+import ShortsScreen from "../shorts";
+import PreviewSection from "../funciones/[seccion]";
+import Chat from "../chat/chat";
 
-const { width: screenWidth } = Dimensions.get("window");
-const TAB_WIDTH = screenWidth / 3; // Ancho de cada tab
 const LINE_WIDTH = 40; // Ancho de la línea roja
 
 export default function Inicio() {
-  const router = useRouter();
+  const { width: screenWidth } = useWindowDimensions();
+  const tabWidth = screenWidth / 5;
+  const { tab } = useLocalSearchParams();
+  const initialTabIndex = tab === "shorts" ? 1 : 0;
   const scrollViewRef = useRef(null);
-  const [activeTab, setActiveTab] = useState(0);
+  const initialTabScrollRef = useRef(initialTabIndex > 0);
+  const [activeTab, setActiveTab] = useState(initialTabIndex);
+  const [pagerHeight, setPagerHeight] = useState(0);
   const { paddingBottom } = useBottomNav();
   const isScrollingRef = useRef(false);
 
   // Animación para la línea indicadora
   const slideAnimation = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    if (initialTabScrollRef.current) {
+      scrollViewRef.current?.scrollTo({ x: initialTabIndex * screenWidth, animated: false });
+      initialTabScrollRef.current = false;
+    }
+  }, [initialTabIndex, screenWidth]);
 
   useEffect(() => {
     // Animar la línea cuando cambia el tab
@@ -37,7 +49,7 @@ export default function Inicio() {
       tension: 40,
       useNativeDriver: true,
     }).start();
-  }, [activeTab]);
+  }, [activeTab, slideAnimation]);
 
   const goToTab = (index) => {
     setActiveTab(index);
@@ -52,18 +64,20 @@ export default function Inicio() {
     if (isScrollingRef.current) return;
     const xOffset = event.nativeEvent.contentOffset.x;
     const index = Math.round(xOffset / screenWidth);
-    if (index !== activeTab && index >= 0 && index < 3) {
+    if (index !== activeTab && index >= 0 && index < 5) {
       setActiveTab(index);
     }
   };
 
   // Calcular posición X de la línea (centrada en cada tab)
   const linePosition = slideAnimation.interpolate({
-    inputRange: [0, 1, 2],
+    inputRange: [0, 1, 2, 3, 4],
     outputRange: [
-      TAB_WIDTH / 2 - LINE_WIDTH / 2, // Tab 0: Inicio
-      TAB_WIDTH + TAB_WIDTH / 2 - LINE_WIDTH / 2, // Tab 1: Chat
-      TAB_WIDTH * 2 + TAB_WIDTH / 2 - LINE_WIDTH / 2, // Tab 2: Perfil
+      tabWidth / 2 - LINE_WIDTH / 2, // Tab 0: Inicio
+      tabWidth + tabWidth / 2 - LINE_WIDTH / 2, // Tab 1: Shorts
+      tabWidth * 2 + tabWidth / 2 - LINE_WIDTH / 2, // Tab 2: Amigos
+      tabWidth * 3 + tabWidth / 2 - LINE_WIDTH / 2, // Tab 3: Notificaciones
+      tabWidth * 4 + tabWidth / 2 - LINE_WIDTH / 2, // Tab 4: Perfil
     ],
   });
 
@@ -76,17 +90,24 @@ export default function Inicio() {
         pagingEnabled
         showsHorizontalScrollIndicator={false}
         onScroll={handleScroll}
+        onLayout={(event) => setPagerHeight(event.nativeEvent.layout.height)}
         scrollEventThrottle={16}
         bounces={false}
         style={{ flex: 1 }}
       >
-        <View style={{ width: screenWidth }}>
-          <InicioFeed isTab={true} onGoToTab={goToTab} />
+        <View style={{ width: screenWidth, height: pagerHeight || "100%" }}>
+          <InicioFeed isTab={true} />
         </View>
-        <View style={{ width: screenWidth }}>
+        <View style={{ width: screenWidth, height: pagerHeight || "100%" }}>
+          <ShortsScreen isTab={true} isTabActive={activeTab === 1} />
+        </View>
+        <View style={{ width: screenWidth, height: pagerHeight || "100%" }}>
           <Chat isTab={true} onGoToTab={goToTab} />
         </View>
-        <View style={{ width: screenWidth }}>
+        <View style={{ width: screenWidth, height: pagerHeight || "100%" }}>
+          <PreviewSection sectionOverride="notificaciones" isTab={true} />
+        </View>
+        <View style={{ width: screenWidth, height: pagerHeight || "100%" }}>
           <Perfil isTab={true} onGoToTab={goToTab} />
         </View>
       </ScrollView>
@@ -117,29 +138,53 @@ export default function Inicio() {
           </Text>
         </TouchableOpacity>
 
-        {/* CHAT TAB */}
+        {/* SHORTS TAB */}
         <TouchableOpacity style={styles.navItem} onPress={() => goToTab(1)}>
           <Ionicons
-            name={activeTab === 1 ? "chatbubble" : "chatbubble-outline"}
+            name={activeTab === 1 ? "play-circle" : "play-circle-outline"}
             size={26}
             color={activeTab === 1 ? "#E60023" : "#888"}
           />
-          <Text
-            style={[styles.navText, activeTab === 1 && styles.navTextActive]}
-          >
-            Chat
+          <Text style={[styles.navText, activeTab === 1 && styles.navTextActive]}>
+            Shorts
           </Text>
         </TouchableOpacity>
 
-        {/* PERFIL TAB */}
+        {/* CHAT TAB */}
         <TouchableOpacity style={styles.navItem} onPress={() => goToTab(2)}>
           <Ionicons
-            name={activeTab === 2 ? "person" : "person-outline"}
+            name={activeTab === 2 ? "chatbubbles" : "chatbubbles-outline"}
             size={26}
             color={activeTab === 2 ? "#E60023" : "#888"}
           />
           <Text
             style={[styles.navText, activeTab === 2 && styles.navTextActive]}
+          >
+            Chat
+          </Text>
+        </TouchableOpacity>
+
+        {/* NOTIFICATIONS TAB */}
+        <TouchableOpacity style={styles.navItem} onPress={() => goToTab(3)}>
+          <Ionicons
+            name={activeTab === 3 ? "notifications" : "notifications-outline"}
+            size={26}
+            color={activeTab === 3 ? "#E60023" : "#888"}
+          />
+          <Text style={[styles.navText, activeTab === 3 && styles.navTextActive]}>
+            Notificaciones
+          </Text>
+        </TouchableOpacity>
+
+        {/* PERFIL TAB */}
+        <TouchableOpacity style={styles.navItem} onPress={() => goToTab(4)}>
+          <Ionicons
+            name={activeTab === 4 ? "person" : "person-outline"}
+            size={26}
+            color={activeTab === 4 ? "#E60023" : "#888"}
+          />
+          <Text
+            style={[styles.navText, activeTab === 4 && styles.navTextActive]}
           >
             Perfil
           </Text>

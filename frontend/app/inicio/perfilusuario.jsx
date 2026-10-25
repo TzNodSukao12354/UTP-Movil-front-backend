@@ -1,5 +1,6 @@
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useEffect, useState } from "react";
+import { API_URL, apiFetch } from "../../utils/api";
 import {
   ActivityIndicator,
   SafeAreaView,
@@ -9,8 +10,6 @@ import {
   View,
 } from "react-native";
 import styles from "./cssperfilusuario";
-
-const BASE_URL = "https://front-backend-utp-movil-production.up.railway.app";
 
 export default function PerfilUsuario() {
   const router = useRouter();
@@ -22,7 +21,7 @@ export default function PerfilUsuario() {
     const cargar = async () => {
       try {
         if (userId) {
-          const res = await fetch(`${BASE_URL}/api/perfil/${userId}`);
+          const res = await apiFetch(`${API_URL}/api/perfil/${userId}`);
           const data = await res.json();
           if (data.success && data.perfil) {
             setUsuario(data.perfil);
@@ -71,7 +70,7 @@ export default function PerfilUsuario() {
         {/* Bio */}
         {usuario?.bio ? (
           <Text style={{ color: "#aaa", fontSize: 13, marginTop: 8, textAlign: "center", paddingHorizontal: 20 }}>
-            "{usuario.bio}"
+            {'"'}{usuario.bio}{'"'}
           </Text>
         ) : null}
 

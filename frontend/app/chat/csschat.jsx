@@ -4,7 +4,7 @@ const styles = StyleSheet.create({
   // El container NO usa paddingBottom fijo — lo maneja SafeAreaView
   container: {
     flex: 1,
-    backgroundColor: "#050505",
+    backgroundColor: "#090B0F",
   },
   header: {
     height: 60,
@@ -12,7 +12,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    backgroundColor: "#050505",
+    backgroundColor: "#090B0F",
     zIndex: 1,
   },
   logo: {
@@ -38,7 +38,7 @@ const styles = StyleSheet.create({
   },
   sidebar: {
     width: "38%",
-    backgroundColor: "#0D0D0D",
+    backgroundColor: "#13171E",
     borderRadius: 18,
     paddingVertical: 10,
     paddingHorizontal: 4,
@@ -62,13 +62,13 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   contactActive: {
-    backgroundColor: "rgba(230,0,35,0.22)",
+    backgroundColor: "rgba(230,0,35,0.14)",
   },
   initialAvatarContainer: {
     width: 38,
     height: 38,
     borderRadius: 19,
-    backgroundColor: "#333333",
+    backgroundColor: "#292F3A",
     alignItems: "center",
     justifyContent: "center",
     marginRight: 8,
@@ -106,7 +106,7 @@ const styles = StyleSheet.create({
     borderRadius: 5,
     backgroundColor: "#30D158",
     borderWidth: 2,
-    borderColor: "#0D0D0D",
+    borderColor: "#13171E",
   },
   statusAway: {
     backgroundColor: "#8A8A8A",
@@ -140,14 +140,14 @@ const styles = StyleSheet.create({
   },
   chatPanel: {
     flex: 1,
-    backgroundColor: "#0D0D0D",
+    backgroundColor: "#13171E",
     borderRadius: 18,
     overflow: "hidden",
   },
   chatHeader: {
     height: 70,
     borderBottomWidth: 1,
-    borderBottomColor: "#1F1F1F",
+    borderBottomColor: "#282E38",
     flexDirection: "row",
     alignItems: "center",
     paddingHorizontal: 12,
@@ -170,7 +170,7 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingHorizontal: 10,
     paddingTop: 10,
-    backgroundColor: "#0F0F0F",
+    backgroundColor: "#10141A",
   },
   dayBox: {
     alignSelf: "center",
@@ -203,11 +203,11 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
   },
   otherBubble: {
-    backgroundColor: "#242424",
+    backgroundColor: "#252B35",
     borderBottomLeftRadius: 4,
   },
   myBubble: {
-    backgroundColor: "#C9142B",
+    backgroundColor: "#B82037",
     borderBottomRightRadius: 4,
   },
   messageText: {
@@ -224,12 +224,12 @@ const styles = StyleSheet.create({
   inputArea: {
     height: 60,
     borderTopWidth: 1,
-    borderTopColor: "#1F1F1F",
+    borderTopColor: "#282E38",
     flexDirection: "row",
     alignItems: "center",
     paddingHorizontal: 10,
     gap: 8,
-    backgroundColor: "#0D0D0D",
+    backgroundColor: "#13171E",
   },
   circleButton: {
     width: 34,
@@ -242,7 +242,7 @@ const styles = StyleSheet.create({
   },
   input: {
     flex: 1,
-    backgroundColor: "#151515",
+    backgroundColor: "#1B2029",
     borderRadius: 20,
     color: "#FFFFFF",
     paddingHorizontal: 14,
@@ -254,9 +254,9 @@ const styles = StyleSheet.create({
   // NO usa paddingBottom fijo — useSafeAreaInsets lo maneja
   bottomNav: {
     flexDirection: "row",
-    backgroundColor: "#050505",
+    backgroundColor: "#090B0F",
     borderTopWidth: 1,
-    borderTopColor: "#1F1F1F",
+    borderTopColor: "#282E38",
     paddingTop: 12,
     paddingHorizontal: 20,
     justifyContent: "space-between",

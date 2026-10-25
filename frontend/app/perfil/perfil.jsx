@@ -13,6 +13,7 @@ import {
 import { useBottomNav } from "../../hooks/useBottomNav";
 import { useThemeContext } from "../../context/ThemeContext";
 import { useLanguageContext } from "../../context/LanguageContext";
+import { API_URL, apiFetch } from "../../utils/api";
 import styles from "./cssperfil";
 
 // Componentes del perfil
@@ -34,8 +35,6 @@ export default function Perfil({ isTab = false, onGoToTab }) {
   const [menuVisible, setMenuVisible] = useState(false);
   const [usuario, setUsuario] = useState(null); // null = cargando
   const [error, setError] = useState(null);
-
-  const BASE_URL = "https://front-backend-utp-movil-production.up.railway.app";
 
   // Cargar datos reales desde PostgreSQL
   const cargarPerfil = async () => {
@@ -60,7 +59,7 @@ export default function Perfil({ isTab = false, onGoToTab }) {
 
       // Intentar cargar desde el backend real
       try {
-        const response = await fetch(`${BASE_URL}/api/perfil/${userId}`, {
+        const response = await apiFetch(`${API_URL}/api/perfil/${userId}`, {
           timeout: 8000,
         });
         const data = await response.json();
@@ -174,8 +173,8 @@ export default function Perfil({ isTab = false, onGoToTab }) {
               console.log("🔒 Cerrando sesión...");
               const token = await AsyncStorage.getItem("authToken");
               if (token) {
-                fetch(
-                  "https://front-backend-utp-movil-production.up.railway.app/api/sesion/cerrar",
+                apiFetch(
+                  `${API_URL}/api/sesion/cerrar`,
                   {
                   method: "POST",
                   headers: { "Content-Type": "application/json" },
@@ -252,15 +251,22 @@ export default function Perfil({ isTab = false, onGoToTab }) {
             <EstadoActual
               estadoInicial={usuario.estado_actual || ""}
               onGuardar={async (nuevoEstado) => {
-                setUsuario((prev) => ({ ...prev, estado_actual: nuevoEstado }));
                 const userId = await AsyncStorage.getItem("userId");
-                if (userId) {
-                  fetch(`${BASE_URL}/api/perfil/${userId}`, {
-                    method: "PUT",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ estado_actual: nuevoEstado }),
-                  }).catch((e) => console.log("No se pudo guardar estado en backend:", e.message));
+                const token = await AsyncStorage.getItem("authToken");
+                if (!userId || !token) throw new Error("Inicia sesión para actualizar tu estado.");
+                const response = await apiFetch(`${API_URL}/api/perfil/${userId}`, {
+                  method: "PUT",
+                  headers: {
+                    "Content-Type": "application/json",
+                    Authorization: `Bearer ${token}`,
+                  },
+                  body: JSON.stringify({ estado_actual: nuevoEstado }),
+                });
+                const data = await response.json();
+                if (!response.ok || !data.success) {
+                  throw new Error(data.error || "No se pudo guardar el estado.");
                 }
+                setUsuario((prev) => ({ ...prev, estado_actual: nuevoEstado }));
               }}
             />
 
@@ -331,8 +337,8 @@ export default function Perfil({ isTab = false, onGoToTab }) {
           onPress={async () => {
             const token = await AsyncStorage.getItem("authToken");
             if (token) {
-              fetch(
-                "https://front-backend-utp-movil-production.up.railway.app/api/sesion/cerrar", 
+              apiFetch(
+                `${API_URL}/api/sesion/cerrar`,
                 {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
@@ -382,7 +388,7 @@ export default function Perfil({ isTab = false, onGoToTab }) {
 
           <TouchableOpacity
             style={styles.navItem}
-            onPress={() => router.push("/notificacion/notificaciones")}
+            onPress={() => router.push("/funciones/notificaciones")}
           >
             <View style={{ position: "relative" }}>
               <Ionicons name="notifications-outline" size={26} color="#888" />

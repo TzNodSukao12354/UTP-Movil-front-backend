@@ -17,9 +17,8 @@ import {
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { API_URL, apiFetch } from "../../utils/api";
 import styles from "./cssEditarPerfil";
-
-const BASE_URL = "https://front-backend-utp-movil-production.up.railway.app";
 
 // ── Supabase Storage (fotos de perfil) ──────────────────────────
 // La anon key SÍ va en el código del celular a propósito (es la llave
@@ -38,10 +37,10 @@ async function subirFotoDePerfil(uriLocal, codigoUsu) {
   const nombreArchivo = `${codigoUsu}.jpg`;
   const uploadUrl = `${SUPABASE_URL}/storage/v1/object/${BUCKET_FOTOS}/${nombreArchivo}`;
 
-  const respuestaArchivo = await fetch(uriLocal);
+  const respuestaArchivo = await apiFetch(uriLocal);
   const blob = await respuestaArchivo.blob();
 
-  const resultado = await fetch(uploadUrl, {
+  const resultado = await apiFetch(uploadUrl, {
     method: "POST",
     headers: {
       apikey: SUPABASE_ANON_KEY,
@@ -152,26 +151,22 @@ export default function EditarPerfil() {
         foto_perfil: fotoUrlFinal,
       };
 
-      let guardadoEnBackend = false;
-
-      if (userId) {
-        try {
-          const response = await fetch(`${BASE_URL}/api/perfil/${userId}`, {
-            method: "PUT",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(body),
-          });
-          const data = await response.json();
-          if (data.success) {
-            guardadoEnBackend = true;
-            await AsyncStorage.removeItem("cached_perfil");
-          } else {
-            console.warn("Backend respondió con error:", data.error);
-          }
-        } catch (netErr) {
-          console.log("Sin conexión al backend, guardando localmente:", netErr.message);
-        }
+      if (!userId) throw new Error("Inicia sesión para editar tu perfil.");
+      const token = await AsyncStorage.getItem("authToken");
+      if (!token) throw new Error("Tu sesión expiró. Inicia sesión nuevamente.");
+      const response = await apiFetch(`${API_URL}/api/perfil/${userId}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(body),
+      });
+      const data = await response.json();
+      if (!response.ok || !data.success) {
+        throw new Error(data.error || "No se pudo guardar el perfil en el servidor.");
       }
+      await AsyncStorage.removeItem("cached_perfil");
 
       // Guardar también localmente
       await AsyncStorage.setItem("custom_username", username.trim());
@@ -183,11 +178,7 @@ export default function EditarPerfil() {
       setFotoPerfil(fotoUrlFinal);
       setFotoNuevaLocal(null);
 
-      const msg = guardadoEnBackend
-        ? "Perfil actualizado correctamente."
-        : "Guardado localmente (sin conexión al servidor).";
-
-      Alert.alert("✅ Perfil guardado", msg, [
+      Alert.alert("✅ Perfil guardado", "Perfil actualizado correctamente.", [
         { text: "OK", onPress: () => router.back() },
       ]);
     } catch (error) {

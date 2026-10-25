@@ -1,5 +1,6 @@
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useState } from "react";
+import { API_URL, apiFetch } from "../utils/api";
 import {
   Alert,
   SafeAreaView,
@@ -25,8 +26,8 @@ export default function VerificarCodigo() {
     setLoading(true);
 
     try {
-      const response = await fetch(
-        "https://front-backend-utp-movil-production.up.railway.app/api/auth/verificar-codigo",
+      const response = await apiFetch(
+        `${API_URL}/api/auth/verificar-codigo`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },

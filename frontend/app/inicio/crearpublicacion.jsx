@@ -43,7 +43,8 @@ export default function CrearPublicacion() {
       quality: 0.8,
     });
     if (!result.canceled && result.assets.length > 0) {
-      setMediaLocalUri(result.assets[0].uri);
+      const asset = result.assets[0];
+      setMediaLocalUri(asset.uri);
       setMediaType("imagen");
     }
   };
@@ -56,7 +57,8 @@ export default function CrearPublicacion() {
       videoMaxDuration: 60,
     });
     if (!result.canceled && result.assets.length > 0) {
-      setMediaLocalUri(result.assets[0].uri);
+      const asset = result.assets[0];
+      setMediaLocalUri(asset.uri);
       setMediaType("video");
     }
   };

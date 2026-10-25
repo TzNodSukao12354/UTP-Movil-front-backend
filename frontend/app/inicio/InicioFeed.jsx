@@ -33,11 +33,11 @@ function PostVideo({ uri }) {
   );
 }
 
-export default function InicioFeed({ isTab = false, onGoToTab }) {
+export default function InicioFeed({ isTab = false }) {
   const router = useRouter();
   const scrollRef = useRef(null);
   const { paddingBottom } = useBottomNav();
-  const { posts, votePost } = useFeed();
+  const { posts, votePost, hiddenUsers } = useFeed();
   const [activeFilter, setActiveFilter] = useState("destacados");
 
   const scrollToTop = () => {
@@ -50,7 +50,9 @@ export default function InicioFeed({ isTab = false, onGoToTab }) {
   );
 
   const visiblePosts = useMemo(() => {
-    const orderedPosts = [...posts];
+    const orderedPosts = posts.filter(
+      (post) => !hiddenUsers.has(String(post.usuario || "Estudiante UTP")),
+    );
 
     if (activeFilter === "destacados") {
       return orderedPosts.sort((first, second) => (Number(second.likes) || 0) - (Number(first.likes) || 0));
@@ -65,7 +67,7 @@ export default function InicioFeed({ isTab = false, onGoToTab }) {
       return orderedPosts.filter((post) => post.group);
     }
     return orderedPosts;
-  }, [activeFilter, posts]);
+  }, [activeFilter, hiddenUsers, posts]);
 
   const filters = [
     { id: "destacados", label: "DESTACADOS" },
@@ -98,6 +100,68 @@ export default function InicioFeed({ isTab = false, onGoToTab }) {
 
       {/* CONTENIDO SCROLLABLE */}
       <ScrollView ref={scrollRef} showsVerticalScrollIndicator={false}>
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 18, gap: 10 }}
+        >
+          {[
+            {
+              key: "eventos",
+              title: "Eventos",
+              subtitle: "Comunidad",
+              icon: "calendar",
+              color: "#8B5CF6",
+              onPress: () => router.push("/funciones/eventos"),
+            },
+            {
+              key: "amigos",
+              title: "Amigos",
+              subtitle: "Comunidad",
+              icon: "people",
+              color: "#3B82F6",
+              onPress: () => router.push("/funciones/amigos"),
+            },
+          ].map((shortcut) => (
+            <TouchableOpacity
+              key={shortcut.key}
+              accessibilityRole="button"
+              accessibilityLabel={`${shortcut.title}: ${shortcut.subtitle}`}
+              onPress={shortcut.onPress}
+              style={{
+                width: 132,
+                minHeight: 74,
+                flexDirection: "row",
+                alignItems: "center",
+                paddingHorizontal: 12,
+                borderRadius: 16,
+                backgroundColor: "#111",
+                borderWidth: 1,
+                borderColor: "#292929",
+              }}
+            >
+              <View style={{
+                width: 38,
+                height: 38,
+                borderRadius: 12,
+                alignItems: "center",
+                justifyContent: "center",
+                backgroundColor: `${shortcut.color}24`,
+              }}>
+                <Ionicons name={shortcut.icon} size={20} color={shortcut.color} />
+              </View>
+              <View style={{ marginLeft: 9, flexShrink: 1 }}>
+                <Text style={{ color: "white", fontSize: 14, fontWeight: "700" }}>
+                  {shortcut.title}
+                </Text>
+                <Text numberOfLines={1} style={{ color: "#999", fontSize: 10, marginTop: 3 }}>
+                  {shortcut.subtitle}
+                </Text>
+              </View>
+            </TouchableOpacity>
+          ))}
+        </ScrollView>
+
         {/* HISTORIAS */}
         <ScrollView
           horizontal
@@ -170,16 +234,6 @@ export default function InicioFeed({ isTab = false, onGoToTab }) {
               </View>
               <View style={{ flexDirection: "row", alignItems: "center" }}>
                 <Text style={styles.time}>{formatRelativeTime(post.createdAt)}</Text>
-                <TouchableOpacity
-                  onPress={() => router.push({ pathname: "/inicio/configuracion", params: { postId: post.id } })}
-                >
-                  <Ionicons
-                    name="ellipsis-horizontal"
-                    size={18}
-                    color="#888"
-                    style={{ marginLeft: 5 }}
-                  />
-                </TouchableOpacity>
               </View>
             </View>
 
@@ -251,10 +305,11 @@ export default function InicioFeed({ isTab = false, onGoToTab }) {
 
               <TouchableOpacity
                 style={styles.action}
-                onPress={() => router.push({ pathname: "/inicio/compartir", params: { postId: post.id } })}
+                accessibilityRole="button"
+                accessibilityLabel={`Más opciones para la publicación de ${post.usuario}`}
+                onPress={() => router.push({ pathname: "/inicio/configuracion", params: { postId: post.id } })}
               >
-                <Ionicons name="share-social-outline" size={22} color="white" />
-                <Text style={styles.actionText}>Compartir</Text>
+                <Ionicons name="ellipsis-horizontal" size={24} color="white" />
               </TouchableOpacity>
             </View>
           </View>

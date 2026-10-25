@@ -1,8 +1,7 @@
 // Para desarrollo local define EXPO_PUBLIC_API_URL, por ejemplo:
 // EXPO_PUBLIC_API_URL=http://192.168.1.5:3000
 // Sin esa variable se usa el backend publicado.
-const configuredUrl = process.env.EXPO_PUBLIC_API_URL?.trim();
-export const API_URL = (configuredUrl || "https://front-backend-utp-movil-production.up.railway.app").replace(/\/$/, "");
+import { API_URL, apiFetch } from "../utils/api";
 
 function getErrorMessage(data, fallback) {
   if (data?.error && data?.details) return `${data.error} Detalle: ${data.details}`;
@@ -12,7 +11,7 @@ function getErrorMessage(data, fallback) {
 async function request(path, { method = "GET", token, body } = {}) {
   let response;
   try {
-    response = await fetch(`${API_URL}${path}`, {
+    response = await apiFetch(`${API_URL}${path}`, {
       method,
       headers: {
         Accept: "application/json",
@@ -63,4 +62,9 @@ export const feedApi = {
   addComment: (token, id, texto) => request(`/api/posts/${id}/comentarios`, { method: "POST", token, body: { texto } }),
   react: (token, id, type) => request(`/api/posts/${id}/reacciones`, { method: "POST", token, body: { type } }),
   toggleSaved: (token, id) => request(`/api/posts/${id}/guardado`, { method: "POST", token }),
+  reportPost: (token, id) => request(`/api/posts/${id}/reportes`, { method: "POST", token }),
+  hideUser: (token, userId) => request(`/api/usuarios/${encodeURIComponent(userId)}/bloqueo`, {
+    method: "POST",
+    token,
+  }),
 };

@@ -16,17 +16,19 @@ const { getIO } = require("../services/ioBus");
  */
 async function subirArchivoMensaje(req, res) {
   try {
-    const { chatId, remitenteId, remitente } = req.body;
-    if (!chatId || !remitenteId || !req.file) {
+    const { chatId } = req.body;
+    if (!chatId || !req.file) {
       return res
         .status(400)
-        .json({ success: false, error: "chatId, remitenteId y archivo son requeridos" });
+        .json({ success: false, error: "chatId y archivo son requeridos" });
+    }
+    if (!await chatService.esMiembroActivoDeChat(chatId, req.user.id)) {
+      return res.status(403).json({ success: false, error: "No tienes acceso a esta conversación." });
     }
 
     const msg = await chatService.guardarMensajeConArchivo({
       chatId,
-      remitenteId,
-      remitente,
+      remitenteId: req.user.id,
       buffer: req.file.buffer,
       nombreOriginal: req.file.originalname,
       mimetype: req.file.mimetype,
@@ -39,7 +41,7 @@ async function subirArchivoMensaje(req, res) {
     res.json({ success: true, data: msg });
   } catch (err) {
     console.error("[subirArchivoMensaje]", err.message);
-    res.status(500).json({ success: false, error: err.message });
+    res.status(err.status || 500).json({ success: false, error: err.message });
   }
 }
 
@@ -49,8 +51,7 @@ async function subirArchivoMensaje(req, res) {
  */
 async function listarChats(req, res) {
   try {
-    const { userId } = req.query;
-    const chats = await chatService.getChatsDeUsuario(userId);
+    const chats = await chatService.getChatsDeUsuario(req.user.id);
     res.json({ success: true, data: chats });
   } catch (err) {
     console.error("[listarChats]", err.message);
@@ -65,6 +66,9 @@ async function listarChats(req, res) {
 async function obtenerMensajes(req, res) {
   try {
     const { chatId } = req.params;
+    if (!await chatService.esMiembroActivoDeChat(chatId, req.user.id)) {
+      return res.status(403).json({ success: false, error: "No tienes acceso a esta conversación." });
+    }
     const mensajes = await chatService.getMensajes(chatId);
     res.json({ success: true, data: mensajes });
   } catch (err) {
@@ -101,7 +105,7 @@ async function crearGrupo(req, res) {
         .status(400)
         .json({ success: false, error: "nombre y creadorId son requeridos" });
     }
-    const grupo = await chatService.crearGrupo({ nombre, descripcion, creadorId });
+    const grupo = await chatService.crearGrupo({ nombre, descripcion, creadorId: req.user.id });
     res.json({ success: true, data: grupo });
   } catch (err) {
     console.error("[crearGrupo]", err.message);
@@ -116,13 +120,13 @@ async function crearGrupo(req, res) {
  */
 async function unirseGrupo(req, res) {
   try {
-    const { codigo, userId } = req.body;
-    if (!codigo || !userId) {
+    const { codigo } = req.body;
+    if (!codigo) {
       return res
         .status(400)
-        .json({ success: false, error: "codigo y userId son requeridos" });
+        .json({ success: false, error: "codigo es requerido" });
     }
-    const grupo = await chatService.unirseGrupoConCodigo({ codigo, userId });
+    const grupo = await chatService.unirseGrupoConCodigo({ codigo, userId: req.user.id });
     res.json({ success: true, data: grupo });
   } catch (err) {
     console.error("[unirseGrupo]", err.message);
@@ -137,6 +141,9 @@ async function unirseGrupo(req, res) {
 async function obtenerMiembrosGrupo(req, res) {
   try {
     const { idChat } = req.params;
+    if (!await chatService.esMiembroActivoDeChat(idChat, req.user.id)) {
+      return res.status(403).json({ success: false, error: "No tienes acceso a este grupo." });
+    }
     const miembros = await chatService.obtenerMiembrosGrupo(idChat);
     res.json({ success: true, data: miembros });
   } catch (err) {
@@ -152,11 +159,11 @@ async function obtenerMiembrosGrupo(req, res) {
 async function expulsarMiembro(req, res) {
   try {
     const { idChat } = req.params;
-    const { adminId, userIdExpulsar } = req.body;
-    if (!adminId || !userIdExpulsar) {
-      return res.status(400).json({ success: false, error: "adminId y userIdExpulsar son requeridos" });
+    const { userIdExpulsar } = req.body;
+    if (!userIdExpulsar) {
+      return res.status(400).json({ success: false, error: "userIdExpulsar es requerido" });
     }
-    const resultado = await chatService.expulsarMiembro({ idChat, adminId, userIdExpulsar });
+    const resultado = await chatService.expulsarMiembro({ idChat, adminId: req.user.id, userIdExpulsar });
     res.json({ success: true, data: resultado });
   } catch (err) {
     console.error("[expulsarMiembro]", err.message);
@@ -171,11 +178,8 @@ async function expulsarMiembro(req, res) {
 async function actualizarGrupo(req, res) {
   try {
     const { idChat } = req.params;
-    const { adminId, nombre, descripcion } = req.body;
-    if (!adminId) {
-      return res.status(400).json({ success: false, error: "adminId es requerido" });
-    }
-    const grupo = await chatService.actualizarGrupo({ idChat, adminId, nombre, descripcion });
+    const { nombre, descripcion } = req.body;
+    const grupo = await chatService.actualizarGrupo({ idChat, adminId: req.user.id, nombre, descripcion });
     res.json({ success: true, data: grupo });
   } catch (err) {
     console.error("[actualizarGrupo]", err.message);
@@ -190,11 +194,7 @@ async function actualizarGrupo(req, res) {
 async function salirDeGrupo(req, res) {
   try {
     const { idChat } = req.params;
-    const { userId } = req.body;
-    if (!userId) {
-      return res.status(400).json({ success: false, error: "userId es requerido" });
-    }
-    const resultado = await chatService.salirDeGrupo({ idChat, userId });
+    const resultado = await chatService.salirDeGrupo({ idChat, userId: req.user.id });
     res.json({ success: true, data: resultado });
   } catch (err) {
     console.error("[salirDeGrupo]", err.message);
@@ -209,11 +209,7 @@ async function salirDeGrupo(req, res) {
 async function regenerarCodigoInvitacion(req, res) {
   try {
     const { idChat } = req.params;
-    const { adminId } = req.body;
-    if (!adminId) {
-      return res.status(400).json({ success: false, error: "adminId es requerido" });
-    }
-    const resultado = await chatService.regenerarCodigoInvitacion({ idChat, adminId });
+    const resultado = await chatService.regenerarCodigoInvitacion({ idChat, adminId: req.user.id });
     res.json({ success: true, data: resultado });
   } catch (err) {
     console.error("[regenerarCodigoInvitacion]", err.message);

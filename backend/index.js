@@ -16,7 +16,9 @@ const cors = require("cors");
 
 const chatRoutes = require("./routes/chatRoutes");
 const postsRoutes = require("./routes/postsRoutes");
+const socialRoutes = require("./routes/socialRoutes");
 const registrarSocketsChat = require("./sockets/chatSocket");
+const { requireAuth } = require("./middleware/auth");
 
 const app = express();
 const server = http.createServer(app);  // ← http.Server para Socket.IO
@@ -325,34 +327,27 @@ app.post("/api/registro", async (req, res) => {
     }
 
     const passwordHash = await bcrypt.hash(password, 10);
+    const codigoUsu = cleanCorreo.split("@")[0].toUpperCase();
+    const interesesJson = JSON.stringify(Array.isArray(intereses) ? intereses : []);
 
     const usuario = await client.query(
       `
       INSERT INTO usuarios
       (
-        id_rol,
-        nombre,
-        apellido,
-        username,
+        codigo_usu,
         correo,
-        password_hash,
-        verificado,
-        estado,
-        fecha_registro
+        username,
+        password_hash
       )
       VALUES
-      ($1,$2,$3,$4,$5,$6,$7,$8,NOW())
+      ($1,$2,$3,$4)
       RETURNING codigo_usu
       `,
       [
-        1, // Usuario normal
-        cleanUser,
-        "",
-        cleanUser,
+        codigoUsu,
         cleanCorreo,
+        cleanUser,
         passwordHash,
-        true,
-        "activo",
       ]
     );
 
@@ -368,29 +363,10 @@ app.post("/api/registro", async (req, res) => {
         genero,
         intereses
       )
-      VALUES
-      ($1,$2,$3,$4,$5)
+      VALUES ($1,$2,$3,$4,$5::jsonb)
       `,
-      [
-        codigo_usu,
-        carrera,
-        ciclo,
-        genero,
-        intereses,
-      ]
+      [codigo_usu, carrera, ciclo, genero, interesesJson]
     );
-
-    // Agregar automáticamente al usuario nuevo a los grupos por defecto
-    const gruposPorDefecto = [4, 5, 6, 7]; // General UTP+, Ing. Sistemas, Gamers UTP, Memes UTP
-    for (const idGrupo of gruposPorDefecto) {
-      await client.query(
-        `
-        INSERT INTO participantes_chat (id_chat, codigo_usu)
-        VALUES ($1, $2)
-        `,
-        [idGrupo, codigo_usu]
-      );
-    }
 
     // ── Crear la sesión de este dispositivo (tabla "sesiones") ──────
     const token = crypto.randomBytes(32).toString("hex");
@@ -452,7 +428,7 @@ app.get("/api/perfil/:id", async (req, res) => {
         u.codigo_usu,
         u.username,
         u.estado,
-        u.fecha_registro,
+        u.creado_en AS fecha_registro,
         p.carrera,
         p.ciclo,
         p.genero,
@@ -478,9 +454,12 @@ app.get("/api/perfil/:id", async (req, res) => {
 });
 
 // Actualiza el perfil del usuario (nombre, bio, carrera, ciclo, genero, intereses, estado_actual, privado, foto_perfil)
-app.put("/api/perfil/:id", async (req, res) => {
+app.put("/api/perfil/:id", requireAuth, async (req, res) => {
   const { username, bio, carrera, ciclo, genero, intereses, estado_actual, privado, foto_perfil } = req.body;
   const codigo_usu = req.params.id;
+  if (req.user.id !== codigo_usu) {
+    return res.status(403).json({ success: false, error: "No puedes editar el perfil de otro usuario." });
+  }
 
   const client = await pool.connect();
   try {
@@ -509,14 +488,20 @@ app.put("/api/perfil/:id", async (req, res) => {
     // Los intereses llegan como array desde EditarPerfil.jsx; los pasamos
     // a texto plano antes de guardar (si se guarda el array tal cual, se
     // corrompe un poco más cada vez que se vuelve a editar).
-    const interesesTexto = Array.isArray(intereses) ? intereses.join(", ") : intereses;
+    const interesesJson = intereses === undefined
+      ? null
+      : JSON.stringify(Array.isArray(intereses)
+        ? intereses
+        : typeof intereses === "string"
+          ? intereses.split(",").map((interes) => interes.trim()).filter(Boolean)
+          : []);
 
     // Actualizar campos de perfil_usuario (upsert)
     await client.query(
       
       `
       INSERT INTO perfil_usuario (codigo_usu, bio, carrera, ciclo, genero, intereses, estado_actual, privado, foto_perfil)
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+      VALUES ($1, $2, $3, $4, $5, $6::jsonb, $7, $8, $9)
       ON CONFLICT (codigo_usu) DO UPDATE SET
         bio          = COALESCE(EXCLUDED.bio, perfil_usuario.bio),
         carrera      = COALESCE(EXCLUDED.carrera, perfil_usuario.carrera),
@@ -533,7 +518,7 @@ app.put("/api/perfil/:id", async (req, res) => {
         carrera !== undefined ? carrera : null,
         ciclo !== undefined ? ciclo : null,
         genero !== undefined ? genero : null,
-        interesesTexto !== undefined ? interesesTexto : null,
+        interesesJson,
         estado_actual !== undefined ? estado_actual : null,
         privado !== undefined ? privado : null,
         foto_perfil !== undefined ? foto_perfil : null,
@@ -684,56 +669,61 @@ app.post("/api/auth/login", async (req, res) => {
 // ── Rutas nuevas del chat ────────────────────────────────────────
 app.use("/api", chatRoutes);
 app.use("/api/posts", postsRoutes);
+app.use("/api", socialRoutes);
 
 // ── Eventos Socket.IO ────────────────────────────────────────────
 registrarSocketsChat(io);
 
 // ── Ruta de salud (útil para verificar que el server corre) ─────
-app.get("/health", (_, res) => res.json({ status: "ok" }));
+const TABLAS_REQUERIDAS = [
+  "usuarios",
+  "perfil_usuario",
+  "posts",
+  "relaciones",
+  "chats",
+  "mensajes",
+  "notificaciones",
+  "sesiones",
+];
+let esquemaListo = false;
+
+app.get("/health", async (_, res) => {
+  try {
+    const { rows } = await pool.query(
+      `SELECT
+         COUNT(*)::integer AS total,
+         COUNT(*) FILTER (WHERE tablename = ANY($1::text[]))::integer AS requeridas
+       FROM pg_tables
+       WHERE schemaname = 'public'`,
+      [TABLAS_REQUERIDAS],
+    );
+    esquemaListo = rows[0].total === TABLAS_REQUERIDAS.length
+      && rows[0].requeridas === TABLAS_REQUERIDAS.length;
+    res.status(esquemaListo ? 200 : 503).json({
+      status: esquemaListo ? "ok" : "schema_not_ready",
+    });
+  } catch (error) {
+    res.status(503).json({ status: "database_unavailable" });
+  }
+});
 
 const PORT = process.env.PORT || 3000;
 
-pool.connect()
-  .then(async (client) => {
-    console.log("✅ Conectado a PostgreSQL/Supabase");
-    try {
-      await client.query(`
-        ALTER TABLE perfil_usuario 
-        ADD COLUMN IF NOT EXISTS bio TEXT,
-        ADD COLUMN IF NOT EXISTS estado_actual TEXT,
-        ADD COLUMN IF NOT EXISTS privado BOOLEAN DEFAULT false,
-        ADD COLUMN IF NOT EXISTS foto_perfil TEXT;
-      `);
-      console.log("✅ Columnas de perfil_usuario verificadas/creadas");
-    } catch (e) {
-      console.warn("⚠️ No se pudieron crear las columnas adicionales:", e.message);
-    }
-
-    // ── Foto/video en publicaciones y sistema de etiquetas ──────────
-    try {
-      await client.query(`
-        ALTER TABLE posts
-        ADD COLUMN IF NOT EXISTS media_url TEXT,
-        ADD COLUMN IF NOT EXISTS media_type TEXT;
-      `);
-      await client.query(`
-        CREATE TABLE IF NOT EXISTS etiquetas (
-          id_etiqueta SERIAL PRIMARY KEY,
-          nombre TEXT UNIQUE NOT NULL
-        );
-      `);
-      await client.query(`
-        CREATE TABLE IF NOT EXISTS post_etiquetas (
-          id_post INTEGER NOT NULL REFERENCES posts(id_post) ON DELETE CASCADE,
-          id_etiqueta INTEGER NOT NULL REFERENCES etiquetas(id_etiqueta) ON DELETE CASCADE,
-          PRIMARY KEY (id_post, id_etiqueta)
-        );
-      `);
-      console.log("✅ Columnas de media y tablas de etiquetas verificadas/creadas");
-    } catch (e) {
-      console.warn("⚠️ No se pudieron crear media/etiquetas:", e.message);
-    } finally {
-      client.release();
+pool.query(
+  `SELECT
+     COUNT(*)::integer AS total,
+     COUNT(*) FILTER (WHERE tablename = ANY($1::text[]))::integer AS requeridas
+   FROM pg_tables
+   WHERE schemaname = 'public'`,
+  [TABLAS_REQUERIDAS],
+)
+  .then(({ rows }) => {
+    esquemaListo = rows[0].total === TABLAS_REQUERIDAS.length
+      && rows[0].requeridas === TABLAS_REQUERIDAS.length;
+    if (esquemaListo) {
+      console.log("✅ PostgreSQL listo con el esquema de ocho tablas.");
+    } else {
+      console.error("❌ PostgreSQL no tiene aplicado el esquema de ocho tablas. Ejecuta la migración revisada antes de usar la API.");
     }
   })
   .catch((err) => {

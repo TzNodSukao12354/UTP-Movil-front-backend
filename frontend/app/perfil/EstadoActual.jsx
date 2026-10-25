@@ -29,15 +29,13 @@ export default function EstadoActual({ estadoInicial = "", onGuardar }) {
 
   const guardarEstado = async () => {
     const nuevoEstado = textoEditando.trim();
-    setEstado(nuevoEstado);
-    setModalVisible(false);
-
-    // Guardar en AsyncStorage como respaldo local
-    await AsyncStorage.setItem("custom_estado", nuevoEstado);
-
-    // Notificar al padre para guardar en el backend
-    if (onGuardar) {
-      onGuardar(nuevoEstado);
+    try {
+      if (onGuardar) await onGuardar(nuevoEstado);
+      await AsyncStorage.setItem("custom_estado", nuevoEstado);
+      setEstado(nuevoEstado);
+      setModalVisible(false);
+    } catch (error) {
+      Alert.alert("No se pudo guardar el estado", error.message);
     }
   };
 

@@ -1,6 +1,7 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Stack, usePathname, useRouter } from "expo-router";
 import { useEffect, useState } from "react";
+import { View } from "react-native";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { ChatProvider } from "../context/ChatContext";
 import AppProvider from "../providers/AppProvider"; // ← agrega esta línea
@@ -9,17 +10,23 @@ import AppProvider from "../providers/AppProvider"; // ← agrega esta línea
 export default function RootLayout() {
   const pathname = usePathname();
   const router = useRouter();
-  const [userId, setUserId] = useState("1");
+  const [userId, setUserId] = useState(null);
   const [nombreUsuario, setNombreUsuario] = useState("Yo");
 
   useEffect(() => {
-    AsyncStorage.getItem("userId").then((id) => {
-      if (id) setUserId(id);
+    let cancelled = false;
+    Promise.all([
+      AsyncStorage.getItem("userId"),
+      AsyncStorage.getItem("nombre_usuario"),
+    ]).then(([id, nombre]) => {
+      if (cancelled) return;
+      setUserId(id);
+      setNombreUsuario(nombre || "Yo");
+    }).catch((error) => {
+      console.error("No se pudo cargar la sesión local:", error);
     });
-    AsyncStorage.getItem("nombre_usuario").then((n) => {
-      if (n) setNombreUsuario(n);
-    });
-  }, []);
+    return () => { cancelled = true; };
+  }, [pathname]);
 
   useEffect(() => {
     const verificarSesion = async () => {
@@ -41,13 +48,15 @@ export default function RootLayout() {
       }
     };
     verificarSesion();
-  }, [pathname]);
+  }, [pathname, router]);
 
   return (
   <SafeAreaProvider>
     <AppProvider>
-      <ChatProvider userId={userId} nombreUsuario={nombreUsuario}>
-        <Stack screenOptions={{ headerShown: false }} />
+      <ChatProvider userId={userId} nombreUsuario={nombreUsuario} sessionRefreshKey={pathname}>
+        <View style={{ flex: 1 }}>
+          <Stack screenOptions={{ headerShown: false }} />
+        </View>
       </ChatProvider>
     </AppProvider>
   </SafeAreaProvider>

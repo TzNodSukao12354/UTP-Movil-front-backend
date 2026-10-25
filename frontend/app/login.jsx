@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import { SafeAreaView, Text, TouchableOpacity, View } from "react-native";
 import { useLanguageContext } from "../context/LanguageContext";
 import { useThemeContext } from "../context/ThemeContext";
+import { API_URL, apiFetch } from "../utils/api";
 import createStyles, { ColorLogin } from "./csslogin";
 
 export default function Login() {
@@ -22,8 +23,8 @@ export default function Login() {
 
       if (token) {
         try {
-          const resp = await fetch(
-            "https://front-backend-utp-movil-production.up.railway.app/api/sesion/verificar",
+          const resp = await apiFetch(
+            `${API_URL}/api/sesion/verificar`,
             {
               method: "POST",
               headers: { "Content-Type": "application/json" },

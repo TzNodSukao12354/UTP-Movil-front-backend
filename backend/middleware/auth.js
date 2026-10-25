@@ -9,11 +9,13 @@ async function findSession(token) {
   if (!token) return null;
 
   const { rows } = await pool.query(
-    `SELECT codigo_usu
-       FROM sesiones
+    `SELECT s.codigo_usu
+       FROM sesiones s
+       JOIN usuarios u ON u.codigo_usu = s.codigo_usu
       WHERE token = $1
-        AND activo = true
-        AND (fecha_expiracion IS NULL OR fecha_expiracion > NOW())
+        AND s.activo = true
+        AND u.estado = 'activo'
+        AND (s.fecha_expiracion IS NULL OR s.fecha_expiracion > NOW())
       LIMIT 1`,
     [token],
   );

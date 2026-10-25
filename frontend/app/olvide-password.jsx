@@ -1,5 +1,6 @@
 import { useRouter } from "expo-router";
 import { useState } from "react";
+import { API_URL, apiFetch } from "../utils/api";
 import {
   Alert,
   SafeAreaView,
@@ -29,8 +30,8 @@ export default function OlvidePassword() {
     setLoading(true);
 
     try {
-      const response = await fetch(
-        "https://backend-utp-movil-production.up.railway.app/api/auth/enviar-codigo-recuperacion",
+      const response = await apiFetch(
+        `${API_URL}/api/auth/enviar-codigo-recuperacion`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },

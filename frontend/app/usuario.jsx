@@ -1,6 +1,7 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useState } from "react";
+import { API_URL, apiFetch } from "../utils/api";
 import {
   Alert,
   SafeAreaView,
@@ -28,7 +29,7 @@ export default function Usuario() {
     setLoading(true);
 
     try {
-      const response = await fetch("https://front-backend-utp-movil-production.up.railway.app/api/registro", {
+      const response = await apiFetch(`${API_URL}/api/registro`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

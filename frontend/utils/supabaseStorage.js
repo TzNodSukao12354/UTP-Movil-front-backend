@@ -6,6 +6,8 @@
 // Supabase Storage (público, con inserts permitidos), igual que ya existe
 // el bucket "avatars". No se puede crear un bucket nuevo solo con la
 // anon key: hay que crearlo una vez desde el dashboard de Supabase.
+import { apiFetch } from "./api";
+
 const SUPABASE_URL = "https://inrrylewaerumbpfrxqp.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlucnJ5bGV3YWVydW1icGZyeHFwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODM5MDU3NTEsImV4cCI6MjA5OTQ4MTc1MX0.EBZq_kwpJDiG_W7acMj7J32D_LFy_dx4GcZwGauU1jI";
 const BUCKET_PUBLICACIONES = "publicaciones";
@@ -30,10 +32,10 @@ export async function subirMediaPublicacion(uriLocal, tipo, userId) {
   const nombreArchivo = `${userId}-${Date.now()}.${ext}`;
   const uploadUrl = `${SUPABASE_URL}/storage/v1/object/${BUCKET_PUBLICACIONES}/${nombreArchivo}`;
 
-  const respuestaArchivo = await fetch(uriLocal);
+  const respuestaArchivo = await apiFetch(uriLocal);
   const blob = await respuestaArchivo.blob();
 
-  const resultado = await fetch(uploadUrl, {
+  const resultado = await apiFetch(uploadUrl, {
     method: "POST",
     headers: {
       apikey: SUPABASE_ANON_KEY,

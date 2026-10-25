@@ -2,7 +2,7 @@ import { StyleSheet } from "react-native";
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#050505",
+    backgroundColor: "#090B0F",
     paddingTop: 45, // Más espacio para la barra de estado
   },
   header: {
@@ -100,13 +100,13 @@ const styles = StyleSheet.create({
   tabItem: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#1A1A1A",
+    backgroundColor: "#151922",
     paddingHorizontal: 18,
     paddingVertical: 10,
     borderRadius: 25,
     marginRight: 10,
     borderWidth: 1,
-    borderColor: "#333",
+    borderColor: "#282E38",
     height: 40,
   },
   tabActive: {
@@ -124,11 +124,13 @@ const styles = StyleSheet.create({
     fontSize: 13,
   },
   post: {
-    backgroundColor: "#0D0D0D",
+    backgroundColor: "#13171E",
     marginHorizontal: 15,
     borderRadius: 18,
     padding: 18,
     marginBottom: 20,
+    borderWidth: 1,
+    borderColor: "#242A34",
   },
   emptyFeedText: {
     color: "#888",
@@ -145,7 +147,7 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: "#333",
+    backgroundColor: "#292F3A",
     justifyContent: "center",
     alignItems: "center",
   },
@@ -160,11 +162,11 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
   },
   info: {
-    color: "#888",
+    color: "#A0A8B5",
     marginTop: 3,
   },
   time: {
-    color: "#777",
+    color: "#8992A0",
   },
   postText: {
     color: "white",
@@ -187,7 +189,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     borderTopWidth: 1,
-    borderTopColor: "#222",
+    borderTopColor: "#282E38",
     paddingTop: 12,
   },
   action: {
@@ -201,7 +203,7 @@ const styles = StyleSheet.create({
   },
   bottomNav: {
     flexDirection: "row",
-    backgroundColor: "#050505",
+    backgroundColor: "#090B0F",
     borderTopWidth: 1,
     borderTopColor: "#1F1F1F",
     paddingTop: 12,

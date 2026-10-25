@@ -1,6 +1,7 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 import { feedApi } from "../services/feedApi";
+import { suscribirFeed } from "../services/socketService";
 
 const FeedContext = createContext(null);
 
@@ -29,6 +30,7 @@ export function FeedProvider({ children }) {
   const [posts, setPosts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [hiddenUsers, setHiddenUsers] = useState(() => new Set());
   const [currentUser, setCurrentUser] = useState({ id: null, nombre: "Estudiante UTP" });
 
   const loadPosts = useCallback(async ({ silent = false } = {}) => {
@@ -47,6 +49,32 @@ export function FeedProvider({ children }) {
   }, []);
 
   useEffect(() => { loadPosts().catch(() => {}); }, [loadPosts]);
+
+  useEffect(() => suscribirFeed((event, payload) => {
+    if (event === "feed:post-creado") {
+      setPosts((previous) => previous.some((post) => String(post.id) === String(payload.post.id))
+        ? previous
+        : [payload.post, ...previous]);
+    } else if (event === "feed:post-actualizado") {
+      setPosts((previous) => previous.map((post) => String(post.id) === String(payload.id)
+        ? payload
+        : post));
+    } else if (event === "feed:post-eliminado") {
+      setPosts((previous) => previous.filter((post) => String(post.id) !== String(payload.id)));
+    } else if (event === "feed:comentario-nuevo") {
+      setPosts((previous) => previous.map((post) => {
+        if (String(post.id) !== String(payload.postId)) return post;
+        const exists = (post.comments || []).some(
+          (comment) => String(comment.id) === String(payload.comment.id),
+        );
+        return exists ? post : { ...post, comments: [...(post.comments || []), payload.comment] };
+      }));
+    } else if (event === "feed:reaccion") {
+      setPosts((previous) => previous.map((post) => String(post.id) === String(payload.postId)
+        ? { ...post, likes: payload.likes }
+        : post));
+    }
+  }), []);
 
   const withSession = useCallback(async (action) => {
     const session = await getSession();
@@ -95,23 +123,35 @@ export function FeedProvider({ children }) {
     });
   }, [withSession]);
 
-  const toggleSavedPost = useCallback(async (id) => withSession(async ({ token }) => {
-    const data = await feedApi.toggleSaved(token, id);
+  const toggleSavedPost = useCallback(async (id) => {
+    return withSession(async ({ token }) => {
+      const data = await feedApi.toggleSaved(token, id);
+      setPosts((previous) => previous.map((post) => String(post.id) === String(id)
+        ? { ...post, saved: data.saved } : post));
+      return data.saved;
+    });
+  }, [withSession]);
+
+  const reportPost = useCallback(async (id) => withSession(async ({ token }) => {
+    await feedApi.reportPost(token, id);
     setPosts((previous) => previous.map((post) => String(post.id) === String(id)
-      ? { ...post, saved: data.saved } : post));
-    return data.saved;
+      ? { ...post, reported: true } : post));
   }), [withSession]);
 
-  const reportPost = useCallback((id) => {
-    setPosts((previous) => previous.map((post) => String(post.id) === String(id) ? { ...post, reported: true } : post));
-  }, []);
+  const hideUser = useCallback(async (userId) => {
+    if (!userId) throw new Error("No se encontró el usuario de esta publicación.");
+    return withSession(async ({ token }) => {
+      await feedApi.hideUser(token, userId);
+      setHiddenUsers((previous) => new Set(previous).add(String(userId)));
+    });
+  }, [withSession]);
 
   const savedPostIds = useMemo(() => posts.filter((post) => post.saved).map((post) => post.id), [posts]);
   const value = useMemo(() => ({
-    posts, loading, error, currentUser, savedPostIds, loadPosts,
+    posts, loading, error, currentUser, savedPostIds, hiddenUsers, loadPosts,
     refreshPosts: () => loadPosts({ silent: true }), createPost, updatePost, deletePost,
-    votePost, toggleReaction: votePost, addComment, toggleSavedPost, reportPost,
-  }), [posts, loading, error, currentUser, savedPostIds, loadPosts, createPost, updatePost, deletePost, votePost, addComment, toggleSavedPost, reportPost]);
+    votePost, toggleReaction: votePost, addComment, toggleSavedPost, reportPost, hideUser,
+  }), [posts, loading, error, currentUser, savedPostIds, hiddenUsers, loadPosts, createPost, updatePost, deletePost, votePost, addComment, toggleSavedPost, reportPost, hideUser]);
 
   return <FeedContext.Provider value={value}>{children}</FeedContext.Provider>;
 }

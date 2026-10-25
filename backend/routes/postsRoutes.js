@@ -13,5 +13,6 @@ router.get("/:id/comentarios", posts.obtenerComentarios);
 router.post("/:id/comentarios", requireAuth, posts.crearComentario);
 router.post("/:id/reacciones", requireAuth, posts.reaccionarPost);
 router.post("/:id/guardado", requireAuth, posts.alternarGuardado);
+router.post("/:id/reportes", requireAuth, posts.reportarPost);
 
 module.exports = router;

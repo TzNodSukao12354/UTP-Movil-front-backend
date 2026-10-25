@@ -7,14 +7,16 @@
 const { Router } = require("express");
 const multer = require("multer");
 const ctrl = require("../controllers/chatController");
+const { requireAuth } = require("../middleware/auth");
 
 const router = Router();
+router.use(requireAuth);
 const upload = multer({
   storage: multer.memoryStorage(),
   limits: { fileSize: 15 * 1024 * 1024 }, // 15 MB
 });
 
-// Lista de chats del usuario  →  GET /api/chats?userId=xxx
+// Lista de chats del usuario autenticado.
 router.get("/chats", ctrl.listarChats);
 
 // Mensajes de un chat         →  GET /api/chats/:chatId/mensajes
