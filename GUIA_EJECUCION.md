@@ -1,7 +1,7 @@
 # 🚀 Cómo prender UTP Móvil — paso a paso
 
 > **Contexto rápido**: Render corre tu backend en la nube (conectado a GitHub).
-> Neon es tu base de datos en la nube. El teléfono conecta a Render, no a tu PC.
+> Supabase es tu base de datos en la nube. El teléfono conecta a Render, no a tu PC.
 > **No necesitas hacer push a GitHub cada vez** — Render ya tiene el código desplegado y corriendo.
 
 ---
@@ -31,21 +31,21 @@ Debe responder: `{"status":"ok"}` con código 200.
 
 ---
 
-## PASO 2 — Verificar la base de datos (Neon)
+## PASO 2 — Verificar la base de datos (Supabase)
 
-1. Abre en el navegador: **https://neon.tech**
-2. Inicia sesión → verás tu proyecto (algo como **utpmovil** o similar).
-3. Haz clic en el proyecto.
-4. En la barra lateral izquierda haz clic en **Branches**.
-5. Verás la rama **production** → confirma que diga **Active** o **Running** (a veces aparece un ícono verde).
+1. Abre en el navegador: **https://supabase.com/dashboard**
+2. Inicia sesión → verás la lista de tus proyectos.
+3. Haz clic en el proyecto (busca algo como **utpmovil** o **postgres**).
+4. En la barra lateral izquierda verás el menú. El proyecto simplemente debe estar activo (no te pide activarlo manualmente como Neon).
 
 **Verificar las 8 tablas:**
-1. En la barra lateral izquierda haz clic en **SQL Editor**.
-2. Pega esto y presiona **Run** (o Ctrl+Enter):
+1. En la barra lateral izquierda haz clic en **SQL Editor** (ícono de terminal/código).
+2. Haz clic en **+ New query**.
+3. Pega esto y presiona **Run** (botón verde arriba a la derecha, o Ctrl+Enter):
 ```sql
 SELECT COUNT(*) FROM pg_tables WHERE schemaname = 'public';
 ```
-3. Debe dar **8**.
+4. Debe dar **8**.
 
 > ⚠️ **NUNCA corras** `001_ocho_tablas.sql` — borra todos los datos de la app.
 
@@ -117,7 +117,7 @@ npm run tunnel
 | # | Dónde | Qué hacer | ¿Obligatorio? |
 |---|-------|-----------|---------------|
 | 1 | Render (web) | Confirmar 🟢 **Live** | ✅ Sí |
-| 2 | Neon (web) | Confirmar **Active** + 8 tablas | ✅ Sí |
+| 2 | Supabase (web) | Confirmar **Active** + 8 tablas | ✅ Sí |
 | 3 | `frontend/.env` | Actualizar IP si cambiaste WiFi | Solo si usas backend local |
 | 4 | Terminal | `cd backend && npm start` | ❌ No (Render lo hace por ti) |
 | 5 | Terminal | `cd frontend && npm run dev` | ✅ Sí |
