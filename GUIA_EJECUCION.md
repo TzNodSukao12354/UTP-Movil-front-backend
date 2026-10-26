@@ -31,25 +31,29 @@ Debe responder: `{"status":"ok"}` con código 200.
 
 ---
 
-## PASO 2 — Verificar la base de datos (Supabase)
+## PASO 2 — Verificar la base de datos (Neon)
 
-1. Abre en el navegador: **https://supabase.com/dashboard**
-2. Inicia sesión → verás la lista de tus proyectos.
-3. Haz clic en el proyecto (busca algo como **utpmovil** o **postgres**).
-4. En la barra lateral izquierda verás el menú. El proyecto simplemente debe estar activo (no te pide activarlo manualmente como Neon).
+1. Abre en el navegador: **https://console.neon.tech**
+2. Inicia sesión → verás el proyecto **utpmovil-production**.
+3. Haz clic en el proyecto.
+4. Llegas al **Branch overview** de la rama `production`. El estado dice **ENDPOINT INACTIVE** cuando está dormida — eso es normal, se despierta sola cuando el backend la usa.
 
 **Verificar las 8 tablas:**
-1. En la barra lateral izquierda haz clic en **SQL Editor** (ícono de terminal/código).
-2. Haz clic en **+ New query**.
-3. Pega esto y presiona **Run** (botón verde arriba a la derecha, o Ctrl+Enter):
+1. En la barra lateral izquierda, debajo de **Postgres database**, haz clic en **SQL Editor**.
+2. Pega esto en el editor:
 ```sql
 SELECT COUNT(*) FROM pg_tables WHERE schemaname = 'public';
 ```
+3. Presiona el botón **Run** (arriba a la derecha) o `Ctrl+Enter`.
 4. Debe dar **8**.
 
 > ⚠️ **NUNCA corras** `001_ocho_tablas.sql` — borra todos los datos de la app.
 
+
+
 ---
+
+
 
 ## PASO 3 — IP local (solo si el teléfono usa backend local)
 
