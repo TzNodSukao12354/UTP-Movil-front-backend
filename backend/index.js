@@ -43,19 +43,51 @@ const pool = new Pool({
 // Se usa la API de Brevo (HTTPS) en vez de SMTP de Gmail, porque Railway
 // bloquea las conexiones SMTP salientes en su plan gratuito. La API de
 // Brevo funciona por HTTPS normal, así que no tiene ese problema.
-const RESEND_API_URL = "https://api.resend.com/emails";
+const nodemailer = require("nodemailer");
+
+function getMailTransporter() {
+  if (!process.env.MAIL_USUARIO || !process.env.MAIL_PASSWORD) return null;
+  return nodemailer.createTransport({
+    host: process.env.MAIL_HOST || "smtp.gmail.com",
+    port: Number(process.env.MAIL_PORT) || 587,
+    secure: Number(process.env.MAIL_PORT) === 465,
+    auth: {
+      user: process.env.MAIL_USUARIO,
+      pass: process.env.MAIL_PASSWORD,
+    },
+  });
+}
 
 async function enviarCorreoOTP(correoDestino, codigo) {
-  const apiKey = process.env.RESEND_API_KEY;
-  
-  if (!apiKey) {
-    throw new Error("RESEND_API_KEY no configurada en las variables de entorno");
-  }
-  
-  // Resend gratis permite enviar directo a tu correo verificado
-  const destinatario = "raznakrotherrol@gmail.com";
+  const mailTransporter = getMailTransporter();
 
-  const response = await fetch(RESEND_API_URL, {
+  if (mailTransporter) {
+    const remitente = process.env.MAIL_REMITENTE || `"UTP+ Móvil" <${process.env.MAIL_USUARIO}>`;
+    await mailTransporter.sendMail({
+      from: remitente,
+      to: correoDestino,
+      subject: `Código de verificación UTP: ${codigo}`,
+      text: `Tu código de verificación para ${correoDestino} es: ${codigo}\n\nExpira en 5 minutos.`,
+      html: `
+        <div style="font-family: Arial, sans-serif; padding: 20px; color: #222;">
+          <h2 style="color: #E60023;">UTP+ Móvil</h2>
+          <p>Tu código de verificación institucional para <strong>${correoDestino}</strong> es:</p>
+          <div style="font-size: 32px; font-weight: bold; letter-spacing: 6px; color: #E60023; margin: 18px 0;">
+            ${codigo}
+          </div>
+          <p style="color: #666; font-size: 13px;">Expira en 5 minutos. Si no fuiste tú, ignora este mensaje.</p>
+        </div>
+      `,
+    });
+    return;
+  }
+
+  const apiKey = process.env.RESEND_API_KEY;
+  if (!apiKey) {
+    throw new Error("No hay servicio de correo configurado (MAIL_USUARIO o RESEND_API_KEY)");
+  }
+
+  const response = await fetch("https://api.resend.com/emails", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -63,7 +95,7 @@ async function enviarCorreoOTP(correoDestino, codigo) {
     },
     body: JSON.stringify({
       from: "UTP+ Movil <onboarding@resend.dev>",
-      to: [destinatario],
+      to: [correoDestino],
       subject: `Código de verificación UTP: ${codigo}`,
       text: `Tu código de verificación para ${correoDestino} es: ${codigo}\n\nExpira en 5 minutos.`,
     }),

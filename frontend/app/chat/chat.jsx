@@ -561,6 +561,7 @@ export default function Chat({ isTab = false, onGoToTab }) {
               placeholder="Escribe un mensaje..."
               placeholderTextColor="#8A8A8A"
               value={textoInput}
+              multiline={true}
               onChangeText={(t) => {
                 setTextoInput(t);
                 emitirEscribiendo(t.length > 0);
