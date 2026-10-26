@@ -43,27 +43,35 @@ const pool = new Pool({
 // Se usa la API de Brevo (HTTPS) en vez de SMTP de Gmail, porque Railway
 // bloquea las conexiones SMTP salientes en su plan gratuito. La API de
 // Brevo funciona por HTTPS normal, así que no tiene ese problema.
-const BREVO_API_URL = "https://api.brevo.com/v3/smtp/email";
+const RESEND_API_URL = "https://api.resend.com/emails";
 
 async function enviarCorreoOTP(correoDestino, codigo) {
-  const response = await fetch(BREVO_API_URL, {
+  const apiKey = process.env.RESEND_API_KEY;
+  
+  if (!apiKey) {
+    throw new Error("RESEND_API_KEY no configurada en las variables de entorno");
+  }
+  
+  // Resend gratis permite enviar directo a tu correo verificado
+  const destinatario = "raznakrotherrol@gmail.com";
+
+  const response = await fetch(RESEND_API_URL, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      Accept: "application/json",
-      "api-key": process.env.BREVO_API_KEY,
+      Authorization: `Bearer ${apiKey}`,
     },
     body: JSON.stringify({
-      sender: { name: "UTP+ Movil", email: process.env.EMAIL_USER },
-      to: [{ email: correoDestino }],
-      subject: "Tu código de verificación - UTP+ Movil",
-      textContent: `Tu código de verificación es: ${codigo}\n\nExpira en 5 minutos. Si tú no solicitaste esto, ignora este correo.`,
+      from: "UTP+ Movil <onboarding@resend.dev>",
+      to: [destinatario],
+      subject: `Código de verificación UTP: ${codigo}`,
+      text: `Tu código de verificación para ${correoDestino} es: ${codigo}\n\nExpira en 5 minutos.`,
     }),
   });
 
   if (!response.ok) {
     const detalle = await response.text();
-    throw new Error(`Brevo respondió ${response.status}: ${detalle}`);
+    throw new Error(`Resend respondió ${response.status}: ${detalle}`);
   }
 }
 
