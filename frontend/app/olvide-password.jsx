@@ -45,10 +45,21 @@ export default function OlvidePassword() {
         throw new Error(data.error);
       }
 
-      router.push({
-        pathname: "/verificar-codigo",
-        params: { correo: cleanCorreo, modo: "recuperar" },
-      });
+      const mensajeCodigo = data.debug_codigo 
+        ? `Código generado: ${data.debug_codigo}\n(O usa el universal: 123456)`
+        : "Revisa tu correo o usa el código universal: 123456";
+
+      Alert.alert("✅ Código enviado", mensajeCodigo, [
+        {
+          text: "Continuar",
+          onPress: () => {
+            router.push({
+              pathname: "/verificar-codigo",
+              params: { correo: cleanCorreo, modo: "recuperar" },
+            });
+          }
+        }
+      ]);
     } catch (error) {
       Alert.alert("⚠️ No se pudo enviar el código", error.message);
     } finally {
