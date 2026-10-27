@@ -35,6 +35,18 @@ console.log(`\x1b[36m│  IP Wi-Fi: \x1b[32m${wifiIp.padEnd(43)}\x1b[36m │\x1b
 console.log(`\x1b[36m│  Expo configurado en interfaz de red local.            │\x1b[0m`);
 console.log(`\x1b[36m└────────────────────────────────────────────────────────┘\x1b[0m\n`);
 
+if (!process.env.EXPO_TOKEN) {
+  try {
+    const fs = require('fs');
+    const path = require('path');
+    const envPath = path.resolve(__dirname, '../.env');
+    if (fs.existsSync(envPath)) {
+      const envContent = fs.readFileSync(envPath, 'utf8');
+      const match = envContent.match(/EXPO_TOKEN=(.*)/);
+      if (match) process.env.EXPO_TOKEN = match[1].trim();
+    }
+  } catch (_) {}
+}
 process.env.REACT_NATIVE_PACKAGER_HOSTNAME = wifiIp;
 process.env.NODE_OPTIONS = `${process.env.NODE_OPTIONS || ''} --max-old-space-size=4096`.trim();
 

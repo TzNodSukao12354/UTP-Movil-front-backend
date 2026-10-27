@@ -1,7 +1,7 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Stack, usePathname, useRouter } from "expo-router";
 import { useEffect, useState } from "react";
-import { View } from "react-native";
+import { StatusBar, View } from "react-native";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { ChatProvider } from "../context/ChatContext";
 import AppProvider from "../providers/AppProvider"; // ← agrega esta línea
@@ -51,14 +51,21 @@ export default function RootLayout() {
   }, [pathname, router]);
 
   return (
-  <SafeAreaProvider>
-    <AppProvider>
-      <ChatProvider userId={userId} nombreUsuario={nombreUsuario} sessionRefreshKey={pathname}>
-        <View style={{ flex: 1 }}>
-          <Stack screenOptions={{ headerShown: false }} />
-        </View>
-      </ChatProvider>
-    </AppProvider>
-  </SafeAreaProvider>
+    <SafeAreaProvider>
+      <AppProvider>
+        <ChatProvider userId={userId} nombreUsuario={nombreUsuario} sessionRefreshKey={pathname}>
+          <View style={{ flex: 1, backgroundColor: "#050505" }}>
+            <StatusBar barStyle="light-content" backgroundColor="#050505" />
+            <Stack
+              screenOptions={{
+                headerShown: false,
+                contentStyle: { backgroundColor: "#050505" },
+                animation: "fade_from_bottom",
+              }}
+            />
+          </View>
+        </ChatProvider>
+      </AppProvider>
+    </SafeAreaProvider>
   );
 }

@@ -1,7 +1,7 @@
 import { Ionicons, MaterialIcons } from "@expo/vector-icons";
-import { useIsFocused } from "@react-navigation/native";
+import { NavigationContext } from "@react-navigation/native";
 import { Redirect, useRouter } from "expo-router";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import {
   ActivityIndicator,
   Animated,
@@ -285,9 +285,26 @@ function ShortVideo({ post, width, height, bottomInset, active, onOpenOptions })
   );
 }
 
+function useSafeIsFocused() {
+  const navigation = useContext(NavigationContext);
+  const [isFocused, setIsFocused] = useState(() => (navigation ? navigation.isFocused() : true));
+
+  useEffect(() => {
+    if (!navigation) return;
+    const unsubscribeFocus = navigation.addListener("focus", () => setIsFocused(true));
+    const unsubscribeBlur = navigation.addListener("blur", () => setIsFocused(false));
+    return () => {
+      unsubscribeFocus();
+      unsubscribeBlur();
+    };
+  }, [navigation]);
+
+  return isFocused;
+}
+
 export default function ShortsScreen({ isTab = false, isTabActive = true }) {
   const router = useRouter();
-  const isFocused = useIsFocused();
+  const isFocused = useSafeIsFocused();
   const insets = useSafeAreaInsets();
   const { width: windowWidth, height: windowHeight } = useWindowDimensions();
   const { posts, loading, error, loadPosts, savedPostIds, hiddenUsers, toggleSavedPost, reportPost, hideUser } = useFeed();

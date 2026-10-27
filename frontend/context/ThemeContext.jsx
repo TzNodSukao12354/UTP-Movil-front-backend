@@ -8,8 +8,8 @@ import { getData, saveData, STORAGE_KEYS } from "../utils/storage";
 const ThemeContext = createContext();
 
 export const ThemeProvider = ({ children }) => {
-  const [isDark, setIsDark] = useState(false);
-  const [theme, setTheme] = useState(lightTheme);
+  const [isDark, setIsDark] = useState(true);
+  const [theme, setTheme] = useState(darkTheme);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -17,20 +17,20 @@ export const ThemeProvider = ({ children }) => {
   }, []);
 
   const loadTheme = async () => {
-  try {
-    const savedTheme = await getData(STORAGE_KEYS.THEME);
+    try {
+      const savedTheme = await getData(STORAGE_KEYS.THEME);
 
-    if (savedTheme === "dark") {
-      setTheme(darkTheme);
-      setIsDark(true);
-    } else {
-      setTheme(lightTheme);
-      setIsDark(false);
+      if (savedTheme === "light") {
+        setTheme(lightTheme);
+        setIsDark(false);
+      } else {
+        setTheme(darkTheme);
+        setIsDark(true);
+      }
+    } finally {
+      setLoading(false);
     }
-  } finally {
-    setLoading(false);
-  }
-};
+  };
 
 const toggleTheme = async () => {
   try {

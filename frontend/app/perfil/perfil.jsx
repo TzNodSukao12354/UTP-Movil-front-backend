@@ -125,25 +125,27 @@ export default function Perfil({ isTab = false, onGoToTab }) {
   };
 
   useEffect(() => {
-    const unsubscribe = navigation.addListener("focus", () => {
-      cargarPerfil();
-    });
-    return unsubscribe;
+    cargarPerfil();
+    if (navigation?.addListener) {
+      const unsubscribe = navigation.addListener("focus", () => {
+        cargarPerfil();
+      });
+      return unsubscribe;
+    }
   }, [navigation]);
-
 
   const containerPaddingBottom = isTab ? 0 : paddingBottom;
 
   // Mostrar cargando mientras el perfil se obtiene
   if (!usuario) {
     return (
-      <SafeAreaView style={[styles.container, { paddingBottom: containerPaddingBottom }]}>
+      <SafeAreaView style={[styles.container, { paddingBottom: containerPaddingBottom, backgroundColor: theme.colors.background }]}>
         <PerfilHeader onMenuPress={() => setMenuVisible(!menuVisible)} />
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color="#E60023" />
           <Text style={styles.loadingText}>
-    {t("loading_profile")}
-</Text>
+            {t("loading_profile")}
+          </Text>
         </View>
       </SafeAreaView>
     );

@@ -52,8 +52,12 @@
       "typedRoutes": true,
       "reactCompiler": true
     },
+    "owner": "tznodsuko",
     "extra": {
-      "router": {}
+      "router": {},
+      "eas": {
+        "projectId": "dbc32970-1799-4534-af0a-5eaa6e5296b6"
+      }
     }
   }
 }
